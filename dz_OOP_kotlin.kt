@@ -53,7 +53,7 @@ class Library {
         }
 
         print("Выберите номер элемента (или '0' для возврата): ")
-        val choice = readLine()?.toIntOrNull()
+        val choice = readlnOrNull()?.toIntOrNull()
         if (choice == null || choice < 0 || choice > items.size) {
             println("Неверный выбор.")
             return
@@ -65,7 +65,7 @@ class Library {
         showItemMenu(selectedItem)
     }
 
-    fun showItemMenu(item: LibraryItem){
+    private fun showItemMenu(item: LibraryItem){
         while(true) {
             println("\n--- Меню для '${item.name}' ---")
             println("1. Взять домой")
@@ -127,7 +127,6 @@ interface  LibraryItem{
     fun getShortInfo(): String
     fun getDetailedInfo(): String
     fun getType(): String
-
 }
 
 // Класс реализации книг
@@ -137,7 +136,7 @@ class Book(
     override val name: String,
     val pageCount: Int,
     val author: String
-    ) : LibraryItem {
+) : LibraryItem {
     override fun getShortInfo(): String = "$name доступна: ${if (isAvailable) "Да" else "Нет"}"
 
     override fun getDetailedInfo(): String =
