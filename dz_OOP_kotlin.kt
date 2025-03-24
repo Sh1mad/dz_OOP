@@ -7,8 +7,8 @@ fun main() {
         // Создаем объекты для тестирования в одну строку
         val books = listOf(Book(id = 1, name = "Маугли", isAvailable = true, pageCount = 202, author = "Джозеф Киплинг"),
             Book(id = 2, name = "Война и мир", isAvailable = false, pageCount = 1225, author = "Лев Толстой"))
-        val newspapers = listOf(Newspaper(id = 3, name = "Сельская жизнь", isAvailable = true, paperNumber = 794),
-            Newspaper(id = 4, name = "Правда", isAvailable = false, paperNumber = 1234))
+        val newspapers = listOf(Newspaper(id = 3, name = "Сельская жизнь", isAvailable = true, paperNumber = 794, month = Month.AUGUST),
+            Newspaper(id = 4, name = "Правда", isAvailable = false, paperNumber = 1234, month = Month.MAY))
         val disks = listOf(Disk(id = 5, name = "Дэдпул и Росомаха", isAvailable = true, type = DiskType.DVD),
             Disk(id = 6, name = "Музыкальный альбом", isAvailable = false, type = DiskType.CD))
 
@@ -27,7 +27,7 @@ fun main() {
             println("4. Выход")
 
             print("Выберите действие: ")
-            when (readLine()?.toIntOrNull()) {
+            when (readlnOrNull()?.toIntOrNull()) {
                 1 -> library.showItems(ItemType.BOOK)
                 2 -> library.showItems(ItemType.NEWSPAPER)
                 3 -> library.showItems(ItemType.DISK)
@@ -59,7 +59,7 @@ class Library {
         }
 
         print("Выберите номер элемента (или '0' для возврата): ")
-        val choice = readLine()?.toIntOrNull()
+        val choice = readlnOrNull()?.toIntOrNull()
         if (choice == null || choice < 0 || choice > filteredItems.size) {
             println("Неверный выбор.")
             return
@@ -131,6 +131,7 @@ abstract class LibraryItem(
     abstract fun getType(): ItemType
 }
 
+// Все доступные объекты в библиотеке
 enum class ItemType{
     BOOK, NEWSPAPER, DISK
 }
@@ -152,15 +153,32 @@ class Book(
     override fun canReturn(): Boolean = !isAvailable
 }
 
+// Месяцы выпуска газет
+enum class Month(val month: String){
+    JANUARY("Январь"),
+    FEBRUARY("Февраль"),
+    MARCH("Март"),
+    APRIL("Апрель"),
+    MAY("Март"),
+    JUNE("Июнь"),
+    JULY("Июль"),
+    AUGUST("Август"),
+    SEPTEMBER("Сентябрь"),
+    OCTOBER("Октябрь"),
+    NOVEMBER("Ноябрь"),
+    DECEMBER("Декабрь")
+}
+
 // Класс реализации газет
 class Newspaper(
     override val id: Int,
     override var isAvailable: Boolean,
     override val name: String,
-    val paperNumber: Int
+    val paperNumber: Int,
+    val month: Month
 ) : LibraryItem(id, isAvailable, name), ReadableInReadingRoom, Returnable {
     override fun getDetailedInfo(): String =
-        "выпуск: $paperNumber газеты $name с id: $id доступен: ${if (isAvailable) "Да" else "Нет"}"
+        "выпуск: $paperNumber газеты $name с id: $id, месяц выпуска ${month.month} доступен: ${if (isAvailable) "Да" else "Нет"}"
 
     override fun getType(): ItemType = ItemType.NEWSPAPER
     override fun canReadInReadingRoom(): Boolean = isAvailable
