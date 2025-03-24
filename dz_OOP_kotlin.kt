@@ -209,10 +209,21 @@ interface TakeHomeable{
     fun canTakeHome(): Boolean
 }
 
+// Интерфейс для проверки возможности читать предмет в читальном зале
 interface ReadableInReadingRoom{
     fun canReadInReadingRoom(): Boolean
 }
 
+// Интерфейс для проверки возможности вернуть предмет в библиотеку
 interface Returnable{
     fun canReturn(): Boolean
+}
+
+// Интерфейс магазина с функцией продажи предмета
+interface Shop <out T: LibraryItem>{
+    fun sell(): LibraryItem
+}
+
+class BookShop(){
+    override sell()
 }
