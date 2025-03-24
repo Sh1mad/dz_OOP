@@ -167,7 +167,9 @@ abstract class LibraryItem(
 
 // Все доступные объекты в библиотеке
 enum class ItemType{
-    BOOK, NEWSPAPER, DISK
+    BOOK,
+    NEWSPAPER,
+    DISK
 }
 
 // Класс реализации книг
@@ -300,4 +302,9 @@ class DiskConverter<in T: LibraryItem> {
 
 interface Convertable{
     fun canBeConverted(): Boolean
+}
+
+// Инлайн функция для получения списка предметов конкретного типа
+inline fun <reified T> getSpecialType(collection: List<Any>): List<T>{
+    return collection.filterIsInstance<T>()
 }
