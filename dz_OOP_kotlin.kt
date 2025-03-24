@@ -24,14 +24,16 @@ fun main() {
             println("1. Показать книги")
             println("2. Показать газеты")
             println("3. Показать диски")
-            println("4. Выход")
+            println("4. Управлять менеджером")
+            println("5. Выход")
 
             print("Выберите действие: ")
             when (readlnOrNull()?.toIntOrNull()) {
                 1 -> library.showItems(ItemType.BOOK)
                 2 -> library.showItems(ItemType.NEWSPAPER)
                 3 -> library.showItems(ItemType.DISK)
-                4 -> running = false
+                4 -> TODO("Управлять менеджером")
+                5 -> running = false
                 else -> println("Неверный выбор. Попробуйте снова.")
             }
         }
@@ -220,10 +222,35 @@ interface Returnable{
 }
 
 // Интерфейс магазина с функцией продажи предмета
-interface Shop <out T: LibraryItem>{
+interface Shop {
     fun sell(): LibraryItem
 }
 
-class BookShop(){
-    override sell()
+// Реализация магазина книг
+class BookShop(): Shop{
+    private val book: Book = Book(id = 228, name = "А зори здесь тихие", isAvailable = true, pageCount = 128, author = "Борис васильев");
+    override fun sell(): Book{
+        return book
+    }
+}
+
+// Реализация магазина газет
+class NewspaperShop(): Shop{
+    private val newspaper: Newspaper = Newspaper(id = 17, name = "Думай", isAvailable = true, paperNumber = 56, month = Month.MARCH);
+    override fun sell(): Newspaper{
+        return newspaper
+    }
+}
+
+// Реализация магазина дисков
+class DiskShop(): Shop{
+    private val disk: Disk = Disk(id = 23, name = "Сказки на ночь", isAvailable = true, type = DiskType.DVD);
+    override fun sell(): Disk{
+        return disk
+    }
+}
+
+// Реализация менеджера
+class Manager<in T : Shop> {
+    fun buy(shop: T) = shop.sell()
 }
