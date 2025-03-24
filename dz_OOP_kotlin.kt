@@ -139,7 +139,7 @@ enum class ItemType{
 }
 
 // Класс реализации книг
-class Book(
+data class Book(
     override val id: Int,
     override var isAvailable: Boolean,
     override val name: String,
@@ -172,7 +172,7 @@ enum class Month(val month: String){
 }
 
 // Класс реализации газет
-class Newspaper(
+data class Newspaper(
     override val id: Int,
     override var isAvailable: Boolean,
     override val name: String,
@@ -191,7 +191,7 @@ class Newspaper(
 enum class DiskType{CD, DVD}
 
 // Класс реализации дисков
-class Disk(
+data class Disk(
     override val id: Int,
     override var isAvailable: Boolean,
     override val name: String,
@@ -254,3 +254,12 @@ class DiskShop(): Shop{
 class Manager<in T : Shop> {
     fun buy(shop: T) = shop.sell()
 }
+
+// Реализация конвертера объекта библиотеки в диск
+class DiskConverter<in T: LibraryItem> {
+    fun convert(item: T) : Disk {
+        val disk: Disk = Disk(item.id, true, item.name, DiskType.CD)
+        return disk
+    }
+}
+
