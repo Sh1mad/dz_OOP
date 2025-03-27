@@ -3,13 +3,18 @@ package com.example.dz_oop_part1
 fun main() {
     val library = Library()
 
-    // Добавление объектов для тестирования
-    library.addBook(Book(id = 1, name = "Маугли", isAvailable = true, pageCount =  202, author = "Джозеф Киплинг"))
-    library.addBook(Book(id = 2, name = "Война и мир", isAvailable = false, pageCount =  1225, author =  "Лев Толстой"))
-    library.addNewspaper(Newspaper(id = 3, name = "Сельская жизнь", isAvailable = true, paperNumber = 794))
-    library.addNewspaper(Newspaper(id = 4, name = "Правда", isAvailable =  false, paperNumber = 1234))
-    library.addDisk(Disk(id = 5, name = "Дэдпул и Росомаха", isAvailable = true, type = DiskType.DVD))
-    library.addDisk(Disk(id = 6, name = "Музыкальный альбом", isAvailable =  false, type = DiskType.CD))
+    // Создаем объекты для тестирования в одну строку
+    val books = listOf(Book(id = 1, name = "Маугли", isAvailable = true, pageCount = 202, author = "Джозеф Киплинг"),
+        Book(id = 2, name = "Война и мир", isAvailable = false, pageCount = 1225, author = "Лев Толстой"))
+    val newspapers = listOf(Newspaper(id = 3, name = "Сельская жизнь", isAvailable = true, paperNumber = 794, month = Month.AUGUST),
+        Newspaper(id = 4, name = "Правда", isAvailable = false, paperNumber = 1234, month = Month.MAY))
+    val disks = listOf(Disk(id = 5, name = "Дэдпул и Росомаха", isAvailable = true, type = DiskType.DVD),
+        Disk(id = 6, name = "Музыкальный альбом", isAvailable = false, type = DiskType.CD))
+
+    // Добавляем все предметы в библиотеку
+    library.addItems(books)
+    library.addItems(newspapers)
+    library.addItems(disks)
 
     // Главное меню
     var running = true
@@ -18,14 +23,16 @@ fun main() {
         println("1. Показать книги")
         println("2. Показать газеты")
         println("3. Показать диски")
-        println("4. Выход")
+        println("4. Управлять менеджером")
+        println("5. Выход")
 
         print("Выберите действие: ")
         when (readlnOrNull()?.toIntOrNull()) {
-            1 -> library.showItems(library.books, "книг")
-            2 -> library.showItems(library.newspapers, "газет")
-            3 -> library.showItems(library.disks, "дисков")
-            4 -> running = false
+            1 -> library.showItems(ItemType.BOOK)
+            2 -> library.showItems(ItemType.NEWSPAPER)
+            3 -> library.showItems(ItemType.DISK)
+            4 -> library.managerControl()
+            5 -> running = false
             else -> println("Неверный выбор. Попробуйте снова.")
         }
     }
@@ -33,46 +40,49 @@ fun main() {
 
 // Реализация системы библиотеки
 class Library {
-    val books = mutableListOf<Book>()
-    val newspapers = mutableListOf<Newspaper>()
-    val disks = mutableListOf<Disk>()
+    private val items = mutableListOf<LibraryItem>()
 
-    fun addBook(book: Book) = books.add(book)
-    fun addNewspaper(newspaper: Newspaper) = newspapers.add(newspaper)
-    fun addDisk(disk: Disk) = disks.add(disk)
+    fun addItems(newItems: List<LibraryItem>) {
+        items.addAll(newItems)
+    }
 
-    fun showItems(items: List<LibraryItem>, itemType: String) {
-        if (items.isEmpty()){
+    private val manager = Manager<Shop>()
+    private val diskConverter = DiskConverter<LibraryItem>()
+
+    fun showItems(itemType: ItemType) {
+        val filteredItems = items.filter { it.getType() == itemType }
+        if (filteredItems.isEmpty()) {
             println("В библиотеке нет $itemType.")
             return
         }
 
         println("\nСписок $itemType:")
-        items.forEachIndexed { index, item ->
+        filteredItems.forEachIndexed { index, item ->
             println("${index + 1}. ${item.getShortInfo()}")
         }
 
         print("Выберите номер элемента (или '0' для возврата): ")
-        val choice = readLine()?.toIntOrNull()
-        if (choice == null || choice < 0 || choice > items.size) {
+        val choice = readlnOrNull()?.toIntOrNull()
+        if (choice == null || choice < 0 || choice > filteredItems.size) {
             println("Неверный выбор.")
             return
         }
 
         if (choice == 0) return
 
-        val selectedItem = items[choice - 1]
+        val selectedItem = filteredItems[choice - 1]
         showItemMenu(selectedItem)
     }
 
-    fun showItemMenu(item: LibraryItem){
+    private fun showItemMenu(item: LibraryItem){
         while(true) {
             println("\n--- Меню для '${item.name}' ---")
             println("1. Взять домой")
             println("2. Читать в читальном зале")
             println("3. Показать подробную информацию")
             println("4. Вернуть")
-            println("5. Назад к списку")
+            println("5. Оцифровать")
+            println("6. Назад к списку")
 
             print("Выберите действие: ")
             when (readlnOrNull()?.toIntOrNull()) {
@@ -80,101 +90,221 @@ class Library {
                 2 -> readInReadingRoom(item)
                 3 -> println("\n${item.getDetailedInfo()}")
                 4 -> returnItem(item)
-                5 -> return
+                5 -> convertToDisk(item)
+                6 -> return
                 else -> println("Неверный выбор.")
             }
         }
     }
 
-    private fun takeHome(item:LibraryItem){
-        if (item is Newspaper) {
-            println("Газеты нельзя взять домой.")
-        } else if (!item.isAvailable){
-            println("Этот объект недоступен в данный момент.")
-        } else {
+    private fun takeHome(item: LibraryItem) {
+        if (item is TakeHomeable && item.canTakeHome()) {
             item.isAvailable = false
-            println("${item.getType()} ${item.id} взяли домой.")
+            println("${item.getType()} ${item.id} взята домой.")
+        } else {
+            println("Этот объект нельзя взять домой.")
         }
     }
 
-    private fun readInReadingRoom(item: LibraryItem){
-        if (item is Disk) {
-            println("Диском нельзя воспользоваться в читальном зале.")
-        } else if (!item.isAvailable) {
-            println("Этот объект недоступен в данный момент.")
-        } else {
+    private fun readInReadingRoom(item: LibraryItem) {
+        if (item is ReadableInReadingRoom && item.canReadInReadingRoom()) {
             item.isAvailable = false
-            println("${item.getType()} ${item.id} взяли в читальный зал.")
+            println("${item.getType()} ${item.id} взята в читальный зал.")
+        } else {
+            println("Этот объект нельзя читать в читальном зале.")
         }
     }
 
     private fun returnItem(item: LibraryItem) {
-        if (item.isAvailable){
-            println("Объект уже находится в библиотеке.")
-        } else {
+        if (item is Returnable && item.canReturn()) {
             item.isAvailable = true
             println("${item.getType()} ${item.id} возвращена.")
+        } else {
+            println("Этот объект нельзя вернуть.")
+        }
+    }
+
+    private fun convertToDisk(item: LibraryItem){
+        if (item is Convertable) {
+            if (item.canBeConverted()) {
+                items.add(diskConverter.convert(item))
+                println("\nДиск успешно добавлен!")
+            } else println("\nОбъект в данный момент недоступен")
+        } else println("Объект не может быть оцифрован!")
+    }
+
+    // Функция управления менеджером
+    fun managerControl(){
+        while(true) {
+            println("\n--- Выберите магазин ---")
+            println("1. Купить в книжном магазине")
+            println("2. Купить в магазине газет")
+            println("3. Купить в магазине дисков")
+            println("4. Назад к списку")
+
+            print("Выберите действие: ")
+            when (readlnOrNull()?.toIntOrNull()) {
+                1 -> items.add(manager.buy(BookShop()))
+                2 -> items.add(manager.buy(NewspaperShop()))
+                3 -> items.add(manager.buy(DiskShop()))
+                4 -> return
+                else -> println("Неверный выбор.")
+            }
         }
     }
 }
 
-// Базовый интерфейс для реализации объектов библиотеки
-interface  LibraryItem{
-    val id: Int
-    var isAvailable: Boolean
-    val name: String
+// Базовый абстрактный класс для реализации объектов библиотеки
+abstract class LibraryItem(
+    open val id: Int,
+    open var isAvailable: Boolean,
+    open val name: String
+) {
+    fun getShortInfo(): String = "$name доступна: ${if (isAvailable) "Да" else "Нет"}"
+    abstract fun getDetailedInfo(): String
+    abstract fun getType(): ItemType
+}
 
-    fun getShortInfo(): String
-    fun getDetailedInfo(): String
-    fun getType(): String
-
+// Все доступные объекты в библиотеке
+enum class ItemType{
+    BOOK,
+    NEWSPAPER,
+    DISK
 }
 
 // Класс реализации книг
-class Book(
+data class Book(
     override val id: Int,
     override var isAvailable: Boolean,
     override val name: String,
     val pageCount: Int,
     val author: String
-    ) : LibraryItem {
-    override fun getShortInfo(): String = "$name доступна: ${if (isAvailable) "Да" else "Нет"}"
-
+) : LibraryItem(id, isAvailable, name), TakeHomeable, ReadableInReadingRoom, Returnable, Convertable {
     override fun getDetailedInfo(): String =
         "книга: $name ($pageCount стр.) автора: $author с id: $id доступна: ${if (isAvailable) "Да" else "Нет"}"
 
-    override fun getType(): String = "Книга"
+    override fun getType(): ItemType = ItemType.BOOK
+    override fun canTakeHome(): Boolean = isAvailable
+    override fun canReadInReadingRoom(): Boolean = isAvailable
+    override fun canReturn(): Boolean = !isAvailable
+    override fun canBeConverted(): Boolean = isAvailable
+}
+
+// Месяцы выпуска газет
+enum class Month(val month: String){
+    JANUARY("Январь"),
+    FEBRUARY("Февраль"),
+    MARCH("Март"),
+    APRIL("Апрель"),
+    MAY("Март"),
+    JUNE("Июнь"),
+    JULY("Июль"),
+    AUGUST("Август"),
+    SEPTEMBER("Сентябрь"),
+    OCTOBER("Октябрь"),
+    NOVEMBER("Ноябрь"),
+    DECEMBER("Декабрь")
 }
 
 // Класс реализации газет
-class Newspaper(
+data class Newspaper(
     override val id: Int,
     override var isAvailable: Boolean,
     override val name: String,
-    val paperNumber: Int
-) : LibraryItem{
-    override fun getShortInfo(): String = "$name доступна: ${if (isAvailable) "Да" else "Нет"}"
-
+    val paperNumber: Int,
+    val month: Month
+) : LibraryItem(id, isAvailable, name), ReadableInReadingRoom, Returnable, Convertable {
     override fun getDetailedInfo(): String =
-        "выпуск: $paperNumber газеты $name с id: $id доступен: ${if (isAvailable) "Да" else "Нет"}"
+        "выпуск: $paperNumber газеты $name с id: $id, месяц выпуска ${month.month} доступен: ${if (isAvailable) "Да" else "Нет"}"
 
-    override fun getType(): String = "Газета"
+    override fun getType(): ItemType = ItemType.NEWSPAPER
+    override fun canReadInReadingRoom(): Boolean = isAvailable
+    override fun canReturn(): Boolean = !isAvailable
+    override fun canBeConverted(): Boolean = isAvailable
+
 }
 
 // Доступные типы дисков
 enum class DiskType{CD, DVD}
 
 // Класс реализации дисков
-class Disk(
+data class Disk(
     override val id: Int,
     override var isAvailable: Boolean,
     override val name: String,
     val type: DiskType
-) : LibraryItem{
-    override fun getShortInfo(): String = "$name доступна: ${if (isAvailable) "Да" else "Нет"}"
-
+) : LibraryItem(id, isAvailable, name), TakeHomeable, Returnable {
     override fun getDetailedInfo(): String =
         "${type} $name доступна: ${if (isAvailable) "Да" else "Нет"}"
 
-    override fun getType(): String = "Диск"
+    override fun getType(): ItemType = ItemType.DISK
+    override fun canTakeHome(): Boolean = isAvailable
+    override fun canReturn(): Boolean = !isAvailable
+
+}
+
+// Интерфейс для проверки возможности забрать предмет домой
+interface TakeHomeable{
+    fun canTakeHome(): Boolean
+}
+
+// Интерфейс для проверки возможности читать предмет в читальном зале
+interface ReadableInReadingRoom{
+    fun canReadInReadingRoom(): Boolean
+}
+
+// Интерфейс для проверки возможности вернуть предмет в библиотеку
+interface Returnable{
+    fun canReturn(): Boolean
+}
+
+// Интерфейс магазина с функцией продажи предмета
+interface Shop {
+    fun sell(): LibraryItem
+}
+
+// Реализация магазина книг
+class BookShop(): Shop{
+    private val book: Book = Book(id = 228, name = "А зори здесь тихие", isAvailable = true, pageCount = 128, author = "Борис васильев");
+    override fun sell(): Book{
+        return book
+    }
+}
+
+// Реализация магазина газет
+class NewspaperShop(): Shop{
+    private val newspaper: Newspaper = Newspaper(id = 17, name = "Думай", isAvailable = true, paperNumber = 56, month = Month.MARCH);
+    override fun sell(): Newspaper{
+        return newspaper
+    }
+}
+
+// Реализация магазина дисков
+class DiskShop(): Shop{
+    private val disk: Disk = Disk(id = 23, name = "Сказки на ночь", isAvailable = true, type = DiskType.DVD);
+    override fun sell(): Disk{
+        return disk
+    }
+}
+
+// Реализация менеджера
+class Manager<in T : Shop> {
+    fun buy(shop: T) = shop.sell()
+}
+
+// Реализация конвертера объекта библиотеки в диск
+class DiskConverter<in T: LibraryItem> {
+    fun convert(item: T) : Disk {
+        val disk: Disk = Disk(item.id, true, item.name, DiskType.CD)
+        return disk
+    }
+}
+
+interface Convertable{
+    fun canBeConverted(): Boolean
+}
+
+// Инлайн функция для получения списка предметов конкретного типа
+inline fun <reified T> getSpecialType(collection: List<Any>): List<T>{
+    return collection.filterIsInstance<T>()
 }
